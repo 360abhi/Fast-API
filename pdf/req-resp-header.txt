@@ -1,0 +1,91 @@
+1. Request-Response Cycle (in Backend APIs)
+The request-response cycle is the full journey a client request makes from the browser (or API client like Postman) to your backend server (FastAPI), and back.
+
+Client (Browser / Postman / App)
+       ↓
+     DNS lookup (resolve domain to IP)
+       ↓
+     TCP connection (to backend server)
+       ↓
+     HTTP Request (GET, POST, etc)
+       ↓
+   FastAPI receives request
+       ↓
+   Route & Middleware match
+       ↓
+   Logic executes
+       ↓
+   Response created (status, headers, body)
+       ↓
+   FastAPI sends HTTP Response
+       ↓
+   Browser/app receives it and shows result
+
+2. Request — Client sends to server
+A request is a message sent by the client to the server. It contains:
+
+| Part        | Description                                                |
+| ----------- | ---------------------------------------------------------- |
+| **Method**  | `GET`, `POST`, `PUT`, etc — tells what action client wants |
+| **URL**     | The route like `/items/5`                                  |
+| **Headers** | Metadata like `Authorization`, `Content-Type`, etc         |
+| **Body**    | Only for `POST`, `PUT` — contains actual data (like JSON)  |
+
+POST /items HTTP/1.1
+Host: myapi.com
+Content-Type: application/json
+Authorization: Bearer <JWT>
+
+{
+  "name": "Pen",
+  "price": 10.5
+}
+
+
+3. Response — Server sends back to client
+A response is what your FastAPI app sends back.
+
+| Part            | Description                                     |
+| --------------- | ----------------------------------------------- |
+| **Status Code** | `200 OK`, `201 Created`, `400 Bad Request`, etc |
+| **Headers**     | Metadata like `Content-Type`, `Cache-Control`   |
+| **Body**        | The actual response data (JSON, HTML, etc)      |
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "item": {
+    "name": "Pen",
+    "price": 10.5
+  },
+  "status": "Item created"
+}
+
+4. HTTP Headers — What & Why
+Headers are key-value pairs that carry metadata. Both requests and responses use them.
+
+Common req headers
+| Header          | Purpose                                               |
+| --------------- | ----------------------------------------------------- |
+| `Content-Type`  | Tells the format of request body (`application/json`) |
+| `Authorization` | Sends login info or token                             |
+| `Accept`        | Tells what format the client wants back (e.g., JSON)  |
+| `User-Agent`    | Info about client (browser, Postman, etc)             |
+
+
+Common resp headers
+| Header                        | Purpose                                |
+| ----------------------------- | -------------------------------------- |
+| `Content-Type`                | Format of the response (JSON, HTML)    |
+| `Set-Cookie`                  | Sets a cookie for session management   |
+| `Cache-Control`               | How long the response should be cached |
+| `Access-Control-Allow-Origin` | For CORS (cross-origin requests)       |
+
+// to view headers
+from fastapi import Request, FastAPI
+
+app = FastAPI()
+
+@app.get("/headers")
+async def read_headers(request: Request):
+    return {"headers": dict(request.headers)}

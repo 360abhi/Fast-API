@@ -1,0 +1,56 @@
+✅ A. HTTP Methods
+Used by the client (like browser or Postman) to communicate with the server.
+
+| Method | Use Case             |
+| ------ | -------------------- |
+| GET    | Read/fetch data      |
+| POST   | Send/submit data     |
+| PUT    | Update existing data |
+| DELETE | Remove/delete data   |
+
+| Code | Meaning               |
+| ---- | --------------------- |
+| 200  | OK                    |
+| 201  | Created (e.g., POST)  |
+| 400  | Bad Request           |
+| 401  | Unauthorized          |
+| 403  | Forbidden             |
+| 404  | Not Found             |
+| 500  | Internal Server Error |
+
+| Feature        | REST                            | RPC                            |
+| -------------- | ------------------------------- | ------------------------------ |
+| Full form      | Representational State Transfer | Remote Procedure Call          |
+| Resource style | URL represents **resources**    | URL represents **functions**   |
+| HTTP Methods   | GET, POST, PUT, DELETE etc.     | Usually just POST              |
+| URL Example    | `/users/5`                      | `/getUser?id=5`                |
+| Usage          | Web APIs (standard)             | Internal APIs or microservices |
+
+
+Stateless & Caching in REST: =>
+Stateless: Server does not store client session — each request must have full info (like JWT token).
+Cacheable: REST allows GET requests to be cached (e.g., with browser or CDN) if marked with cache headers.
+
+✅ E. JWT (JSON Web Token)
+JWT is used for authentication:
+Issued after successful login
+Contains 3 parts:
+header.payload.signature
+
+How it works:
+Client logs in → Server returns token
+Client sends token in Authorization header
+Server verifies signature using secret key
+If valid → request proceeds
+If token is tampered, signature won’t match and request is rejected.
+✅ Both users get tokens signed with the same secret key — but tokens differ due to user info in payload.
+
+A. What is FastAPI?
+A modern, high-performance Python web framework used for:
+Building APIs
+Auto-validating data
+Automatic docs (/docs)
+
+C. What is a Web Server in This Context?
+A web server is a program running on your machine (not a separate computer).
+Example: Uvicorn runs locally on port 8000 and listens for requests like:
