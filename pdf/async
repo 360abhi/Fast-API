@@ -1,0 +1,99 @@
+FastAPI is built on ASGI (Asynchronous Server Gateway Interface), which supports concurrent code execution. That means:
+
+| Without `async`           | With `async`                            |
+| ------------------------- | --------------------------------------- |
+| Slower, blocking I/O      | Fast, non-blocking I/O                  |
+| One request blocks others | Handles multiple requests at once       |
+| Good for CPU-bound tasks  | Great for I/O-bound tasks like DB, APIs |
+
+When Should You NOT Use async?
+Use normal def when:
+You're doing CPU-heavy work like image processing or ML (async won't help).
+You're calling a library that does not support async.
+But in all other I/O-heavy tasks (DB, file, API), use async.
+
+
+Imagine 40 clients hit your FastAPI endpoint at once, and your endpoint includes a slow operation,
+like a 5-second API call or DB query.
+
+-- No blocking using asyncio.sleep with async fun--
+from fastapi import FastAPI
+import asyncio
+
+app = FastAPI()
+
+@app.get("/wait")
+async def wait():
+    await asyncio.sleep(5)  # Simulates a non-blocking 5-second delay
+    return {"message": "Done waiting!"}
+
+----Blocking---------
+from fastapi import FastAPI
+import time
+
+app = FastAPI()
+
+@app.get("/wait")
+def wait():
+    time.sleep(5)  # Simulates a blocking 5-second delay
+    return {"message": "Done waiting!"}
+
+
+| Style     | 40 Requests Simultaneously | Total Time |
+| --------- | -------------------------- | ---------- |
+| ✅ `async` | Handles all in parallel    | \~5 sec    |
+| ❌ `def`   | Blocks each one            | \~200 sec  |
+
+
+Why?
+asyncio.sleep(5) yields control: the server can handle the next request while this one is "sleeping".
+time.sleep(5) blocks the thread: no other request can be handled in that thread during that time.
+
+
+🧠 1. await pauses only the current function
+When you write await something(), you're telling the event loop:
+“Pause this function here and go do something else in the meantime.”
+But that only affects the current async function. Other requests or async functions are not blocked.
+
+@app.get("/multi")
+async def multi_step():
+    await step_1()  # Must finish before...
+    await step_2()  # ...this starts
+
+
+from fastapi import FastAPI
+import asyncio
+
+app = FastAPI()
+
+@app.get("/sequential")
+async def sequential_example():
+    print("Step 1 started")
+    await asyncio.sleep(2)
+    print("Step 1 done")
+
+    print("Step 2 started")
+    await asyncio.sleep(2)
+    print("Step 2 done")
+
+    return {"message": "Both steps done"}
+
+Step 1 started
+(wait 2 seconds)
+Step 1 done
+Step 2 started
+(wait 2 seconds)
+Step 2 done
+
+
+But... other requests are NOT blocked!
+If 5 users hit /sequential at the same time:
+All 5 will print "Step 1 started" immediately in parallel
+Each request runs its own copy of the function
+
+
+| Scenario                                     | Behavior                        |
+| -------------------------------------------- | ------------------------------- |
+| Two `await`s in **same function**            | Run **sequentially**, in order  |
+| Two requests hitting same route concurrently | Each one runs **independently** |
+| One request running long `await`             | Does **not block** other users  |
