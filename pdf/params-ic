@@ -1,0 +1,58 @@
+from fastapi import FastAPI,Header,Response
+
+app = FastAPI()
+
+
+# Receiving headers from a request (e.g., auth token, custom headers)
+@app.get('/getheader')
+def read_headers(custom_header:str = Header(...)):
+    return {
+        "Recieved Headers": custom_header
+    }
+
+
+# Sending headers in a response
+@app.get("/add-header/")
+def add_response_header(response: Response):
+    response.headers["X-Custom-Header"] = "MyValue"
+    return {"message": "Header added!"}
+
+
+# Path params
+@app.get('/tasks/{task}')
+def read_task(task:int):
+    return {
+        "Task": task
+    }
+
+
+# query params ?
+@app.get('/search')
+def search_tasks(q:str,limit:int = 10,null:int=5):
+    return {
+        "Query": q,
+        "limit": limit,
+        "null": null
+    }
+
+# http://127.0.0.1:8000/search?q=abhishek&limit=5&null=6
+# {
+#   "Query": "abhishek",
+#   "limit": 5,
+#   "null": 6
+# }
+
+
+# Combine query and path
+@app.get('/products/{product_id}')
+def search_product(product_id:int,review:bool = False):
+    return {
+        "Product ID": product_id,
+        "Show Review": review
+    }
+
+# http://127.0.0.1:8000/products/123?review=True
+# {
+#   "Product ID": 123,
+#   "Show Review": true
+# }
