@@ -1,0 +1,47 @@
+1. Serialization (Python ➜ JSON)
+Converting a Python object (like a dict or a Pydantic model) into a JSON string so it can be sent over a network.
+
+import json
+
+data = {"name": "Abhishek", "age": 25}
+json_data = json.dumps(data)
+print(json_data)  # Output: {"name": "Abhishek", "age": 25}
+ In FastAPI:
+When you return a dictionary or Pydantic model, FastAPI automatically serializes it to JSON.
+
+2. Deserialization (JSON ➜ Python)
+Converting JSON data from a request (usually a string) into a Python object (dict or model).
+
+import json
+
+json_data = '{"name": "Abhishek", "age": 25}'
+data = json.loads(json_data)
+print(data["name"])  # Output: Abhishek
+In FastAPI:
+When you send a JSON body in a POST request, FastAPI automatically deserializes it into a Pydantic model.
+
+Optional: Custom Format for datetime (if you want)
+If you want to return datetime in a custom format (e.g., just dd-mm-yyyy), you can override it using Pydantic's @validator or FastAPI's jsonable_encoder.
+
+from fastapi import FastAPI
+from pydantic import BaseModel, validator
+from datetime import datetime
+
+app = FastAPI()
+
+class CustomEvent(BaseModel):
+    name: str
+    time: datetime
+
+    @validator("time", pre=True, always=True)
+    def format_time(cls, value):
+        if isinstance(value, datetime):
+            return value.strftime("%d-%m-%Y %H:%M:%S")
+        return value
+
+@app.get("/event", response_model=CustomEvent)
+def get_event():
+    return {
+        "name": "Team Meeting",
+        "time": datetime.now()
+    }
