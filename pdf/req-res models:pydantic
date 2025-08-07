@@ -1,0 +1,147 @@
+** Req model : mostly used for post,put, patch : incoming req validation : 422 error : for get used for path/query
+  ** res model : used for both get/post req to send response and if extra field is present does not throws error instead
+    quietly filters the field and sends the updated response
+
+What is a Response Model in FastAPI?
+A response model is a Pydantic model that defines the shape and data types of the response your API sends back to the client.
+✅ Automatically filter/validate response data
+✅ Hide sensitive/internal fields
+✅ Generate clean Swagger docs
+✅ Make code more readable and maintainable
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+# Define a model for the output
+class Item(BaseModel):
+    name: str
+    price: float
+
+@app.get("/item", response_model=Item)
+async def get_item():
+    return {"name": "Book", "price": 9.99, "secret_code": "abc123"}
+
+🔍 Explanation:
+✅ The function returns a dict with 3 keys: name, price, and secret_code.
+✅ The response_model=Item tells FastAPI to only return fields that are defined in Item.
+So, secret_code will be automatically excluded from the final response.
+
+{
+  "name": "Book",
+  "price": 9.99
+}
+
+Why is this useful?
+Let’s say your database model contains:
+password
+email
+created_at
+
+You don’t want to expose all of that to the frontend. Use response models to return only safe data.
+
+class User(BaseModel):
+    id: int
+    username: str
+    email: str
+    password: str  # sensitive
+
+class SafeUser(BaseModel):
+    id: int
+    username: str
+    email: str
+
+@app.get("/user", response_model=SafeUser)
+async def get_user():
+    return User(id=1, username="john", email="john@example.com", password="hashed")
+
+
+## Nested Response Model
+class Item(BaseModel):
+    name: str
+    price: float
+
+class Order(BaseModel):
+    order_id: int
+    items: list[Item]
+
+@app.get("/order", response_model=Order)
+async def get_order():
+    return {
+        "order_id": 101,
+        "items": [
+            {"name": "Pen", "price": 1.5},
+            {"name": "Notebook", "price": 5.0}
+        ]
+    }
+
+
+ Request Body Input (Inside function parameter)
+This is when the Pydantic model is used to accept input from the client — typically with POST, PUT, etc.
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class Item(BaseModel):
+    name: str
+    price: float
+
+@app.post("/items")
+async def create_item(item: Item):  # ⬅️ Used as function parameter
+    return {"message": f"Item {item.name} with price {item.price} created!"}
+
+*** BOTH
+
+class ItemIn(BaseModel):
+    name: str
+    price: float
+
+class ItemOut(BaseModel):
+    name: str
+    price: float
+
+@app.post("/items", response_model=ItemOut)
+async def create_item(item: ItemIn):
+    # some processing or DB logic
+    return {"name": item.name, "price": item.price, "secret": "hidden"}
+
+ItemIn is used for receiving request data
+ItemOut is used for shaping the response
+Even if extra fields (like "secret") are returned, FastAPI filters them out based on response_model.
+
+| Use                | Where                             | Purpose                             |
+| ------------------ | --------------------------------- | ----------------------------------- |
+| **Request Model**  | Function parameter                | Parse & validate **incoming** data  |
+| **Response Model** | `response_model=...` in decorator | Format & validate **outgoing** data |
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+# 📥 Incoming request body model (client sends this)
+class ItemIn(BaseModel):
+    name: str
+    price: float
+    secret_code: str  # sent by client, but not exposed in response
+
+# 📤 Outgoing response model (server returns this)
+class ItemOut(BaseModel):
+    name: str
+    price_with_tax: float  # calculated on server
+
+@app.post("/items", response_model=ItemOut)
+async def create_item(item: ItemIn):
+    price_with_tax = item.price * 1.18  # add 18% GST
+    return {
+        "name": item.name,
+        "price_with_tax": price_with_tax,
+      
+        "secret_code": item.secret_code  # returned but not included in response due to model
+    }
+
+
+
