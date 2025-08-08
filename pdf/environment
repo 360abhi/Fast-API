@@ -1,0 +1,97 @@
+What Are Environment Variables?
+Environment variables are key-value pairs stored outside your code, used to configure application behavior without hardcoding sensitive or environment-specific data (like passwords, database URLs, API keys, etc.).
+
+| Use Case                       | Why Use Env Vars?                          |
+| ------------------------------ | ------------------------------------------ |
+| 🔐 Hide sensitive data         | API keys, passwords, DB credentials        |
+| 🚀 Switch between environments | dev, staging, production configs           |
+| ⚙️ Configurable apps           | Port, debug mode, logging level, etc.      |
+| 🔄 Keep code flexible & secure | Code doesn’t need to change per deployment |
+
+Where Are They Stored?
+Usually in a .env file or set directly in the OS or Docker container.
+
+DATABASE_URL=postgresql://user:pass@localhost:5432/mydb
+API_KEY=abcd1234
+DEBUG=True
+
+
+How to Access Environment Variables in Python
+Method 1: Using os module (built-in)
+
+import os
+
+db_url = os.getenv("DATABASE_URL")
+debug = os.getenv("DEBUG", "False")  # Default fallback
+
+
+FastAPI + Environment Variables
+Usually, you load environment variables using python-dotenv or a tool like pydantic.BaseSettings.
+
+from fastapi import FastAPI
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # Load .env file
+
+app = FastAPI()
+
+@app.get("/config")
+def get_config():
+    return {
+        "database_url": os.getenv("DATABASE_URL"),
+        "api_key": os.getenv("API_KEY")
+    }
+
+## .env file should be in the project root folder
+
+What is BaseSettings?
+BaseSettings is a special Pydantic class designed to read environment variables and convert them into a strongly-typed config object (like a Pydantic model).
+Instead of using os.getenv() everywhere, you define all your env-based settings in one place.
+
+| Benefit                | Description                                                                 |
+| ---------------------- | --------------------------------------------------------------------------- |
+| ✅ Cleaner Code         | Define all config in a single settings class                                |
+| 🔐 Secure              | Keeps secrets out of code; uses `.env` or system env                        |
+| 🎯 Typed and Validated | Uses Pydantic to auto-validate env values (e.g., expects `int`, `str`, etc) |
+| 🔄 Easy Overrides      | Works with `.env` or real env vars (like in Docker or CI/CD)                |
+| 🔄 Supports Defaults   | Can set default values inside the class                                     |
+
+Create a config.py file with BaseSettings
+# config.py
+from pydantic import BaseSettings
+
+class Settings(BaseSettings):
+    database_url: str
+    api_key: str
+    debug: bool = False   # default if not provided
+
+    class Config:
+        env_file = ".env"  # tells Pydantic to load from .env file
+        
+# in fastapi file:
+# main.py
+from fastapi import FastAPI
+from config import Settings
+
+settings = Settings()
+
+app = FastAPI()
+
+@app.get("/config")
+def get_config():
+    return {
+        "db": settings.database_url,
+        "key": settings.api_key,
+        "debug_mode": settings.debug
+    }
+
+| Scenario       | How Secrets Are Stored                        |
+| -------------- | --------------------------------------------- |
+| Local Dev      | `.env` file                                   |
+| Linux Server   | `export VAR=value` in shell or service config |
+| Docker         | `environment:` block or `docker run -e` flags |
+| CI/CD (GitHub) | Use "Secrets" tab to store keys               |
+| Cloud Platform | Use UI/CLI to set env vars                    |
+| Large Scale    | Use Secret Managers like AWS Secrets Manager  |
+
