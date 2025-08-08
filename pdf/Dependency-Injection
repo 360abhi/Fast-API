@@ -21,3 +21,81 @@ Reusable components: You can swap dependencies (e.g., use test DB in tests).
 Better testing: Easy to mock dependencies in unit tests.
 Loosely coupled code: Functions don’t depend on each other directly.
 
+1. Simple Class-Based Injection 
+You can pass a class instance directly to a route function:
+
+class MyService:
+    def do_something(self):
+        return "done"
+
+@app.get("/test")
+def test(service: MyService):
+    return service.do_something()
+BUT! 👆 This does not work out-of-the-box in FastAPI the way it would in some other frameworks. FastAPI doesn't magically "know" how to create MyService.
+
+2. The Real FastAPI Way: Depends
+You use the Depends function to tell FastAPI how to provide a value.
+
+from fastapi import Depends
+
+class MyService:
+    def do_something(self):
+        return "done"
+
+def get_service():
+    return MyService()
+
+@app.get("/test")
+def test(service: MyService = Depends(get_service)):
+    return service.do_something()
+
+** Depends(get_service) tells FastAPI: “When this route is called, call get_service() and give its return value to service.”
+get_service() returns an instance of MyService.
+
+You Can Nest Dependencies
+Dependencies can depend on other dependencies.
+
+def get_db():
+    db = DBSession()
+    try:
+        yield db
+    finally:
+        db.close()
+
+def get_user_service(db = Depends(get_db)):
+    return UserService(db)
+
+@app.get("/users")
+def list_users(service: UserService = Depends(get_user_service)):
+    return service.list()
+_________________________________________________________________________
+
+from fastapi import Depends, HTTPException
+
+def verify_token(token: str = ""):
+    if token != "secret":
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+@app.get("/secure-data")
+def get_secure_data(token_check=Depends(verify_token)):
+    return {"data": "Super secret stuff"}
+GET /secure-data?token=secret ✅
+GET /secure-data?token=wrong ❌ Unauthorized
+
+ Using yield in a Dependency (For Cleanup – like DB close)
+
+def fake_db():
+    print("⛓️ Connecting to DB")
+    yield {"db": "connected"}
+    print("❌ Closing DB")
+
+@app.get("/db-test")
+def read_data(db=Depends(fake_db)):
+    return {"db_status": db["db"]}
+
+
+What is Dependency Chaining / Nesting?
+It means:
+
+A dependency (like a class) can itself depend on another dependency.
+FastAPI will automatically resolve and inject all levels, as long as you declare them properly using Depends.
