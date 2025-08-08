@@ -1,0 +1,23 @@
+What Is Dependency Injection?
+In simple terms:
+Dependency Injection (DI) means giving a function or class the "things" (dependencies) it needs from the outside, rather than letting it create or find those things itself.
+
+without Di:
+def drink_tea():
+    kettle = Kettle()
+    tea = kettle.make_tea()
+    cup = Cup()
+    cup.fill(tea)
+    return cup
+with DI:
+def drink_tea(kettle: Kettle, cup: Cup):
+    tea = kettle.make_tea()
+    cup.fill(tea)
+    return cup
+
+What Problem Does It Solve?
+Cleaner code: Function doesn’t worry about where things come from.
+Reusable components: You can swap dependencies (e.g., use test DB in tests).
+Better testing: Easy to mock dependencies in unit tests.
+Loosely coupled code: Functions don’t depend on each other directly.
+
